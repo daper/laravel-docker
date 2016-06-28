@@ -1,0 +1,94 @@
+version: "2"
+services:
+
+  ############
+  # FRONTEND #
+  ############
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"     # HTTP
+    links:
+      - phpmyadmin
+      - rabbitmq
+    volumes:
+      - run:/var/run
+      - ./www:/var/www
+      - ./build/nginx/sites:/etc/nginx/conf.d
+      - ./build/nginx/nginx.conf:/etc/nginx/nginx.conf
+
+  ################
+  # PHP Services #
+  ################
+
+  php70:
+    build:
+      context: build/php/7.0
+    image: local/php:7.0
+    links:
+      - mysql
+      - mongo
+      - redis
+      - rabbitmq
+    volumes:
+      - ./www:/var/www
+      - run:/var/run
+
+
+  #########################################
+  # Cache, DB and Task processor services #
+  #########################################
+
+  mongo:
+    image: mongo
+    volumes:
+      - mongo-data:/data/db
+    ports:
+      - "27017:27017"
+
+  redis:
+    image: redis
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+
+  rabbitmq:
+      image: rabbitmq:3-management
+      environment:
+        RABBITMQ_DEFAULT_USER: admin
+        RABBITMQ_DEFAULT_PASS: password
+
+  mysql:
+    image: mysql
+    volumes:
+      - mysql-data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: laravel
+
+  ################
+  # Admin panels #
+  ################
+
+  phpmyadmin:
+      image: phpmyadmin/phpmyadmin
+      links:
+        - mysql:db
+      environment:
+        PMA_USER: root
+        PMA_PASSWORD: password
+
+volumes:
+  redis-data:
+    driver: local
+  mysql-data:
+    driver: local
+  mongo-data:
+    driver: local
+  run:
+    driver: local
