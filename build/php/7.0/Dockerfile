@@ -3,9 +3,10 @@ MAINTAINER "David Peralta <david@daper.email>"
 
 RUN printf "\n%s\n%s" "@edge http://dl-cdn.alpinelinux.org/alpine/edge/main" "@testing http://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /etc/apk/repositories \
     && apk update && apk upgrade \
-    && apk add autoconf automake make gcc g++ libtool pkgconfig libmcrypt-dev re2c openssl-dev git zlib-dev xdg-utils libpng-dev
+    && apk add autoconf automake make gcc g++ libtool pkgconfig libmcrypt-dev re2c openssl-dev openssl git zlib-dev xdg-utils libpng-dev freetype-dev libjpeg-turbo-dev openssh-client libxslt-dev
 
-RUN docker-php-ext-install -j$(grep -c ^processor /proc/cpuinfo 2>/dev/null || 1) gd curl mcrypt mysqli pdo_mysql bcmath zip xml xmlreader xmlwriter simplexml soap json iconv fileinfo dom gd
+RUN docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/ \
+    && docker-php-ext-install -j$(grep -c ^processor /proc/cpuinfo 2>/dev/null || 1) gd curl mcrypt mysqli pdo_mysql bcmath zip xml xmlreader xmlwriter simplexml soap json iconv fileinfo dom xsl
 
 RUN apk add rabbitmq-c@testing rabbitmq-c-dev@testing \
     && pecl install amqp \
@@ -32,6 +33,19 @@ RUN pecl install apcu \
 
 RUN pecl install xdebug \
     && docker-php-ext-enable xdebug
+
+RUN apk add imagemagick-dev \
+    && printf "\n" | pecl install imagick \
+    && docker-php-ext-enable imagick
+
+RUN apk add libssh2 libssh2-dev \
+    && wget "https://github.com/Sean-Der/pecl-networking-ssh2/archive/php7.zip" \
+    && unzip php7.zip \
+    && cd pecl-networking-ssh2-php7 \
+    && phpize \
+    && ./configure \
+    && make && make install \
+    && docker-php-ext-enable ssh2
 
 RUN curl -sS "https://getcomposer.org/installer" | php
 RUN mv composer.phar /usr/local/bin/composer
