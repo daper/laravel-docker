@@ -21,11 +21,11 @@ services:
   ################
   # PHP Services #
   ################
-
-  php70:
+  
+  php70: 
     build:
-      context: build/php/7.0
-    image: local/php:7.0
+      context: build
+      dockerfile: php70.dockerfile
     links:
       - mysql
       - mongo
@@ -34,7 +34,8 @@ services:
     volumes:
       - ./www:/var/www
       - run:/var/run
-
+    ports:
+      - "3000:3000"
 
   #########################################
   # Cache, DB and Task processor services #
